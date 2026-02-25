@@ -92,9 +92,6 @@ class SPI(busio.SPI):
 
 
 class UART(busio.UART):
-    async def lock(self):
-        while not self.try_lock():
-            await asyncio.sleep(0)
 
     async def read(self, nbytes=0):
         data = bytearray(nbytes)
