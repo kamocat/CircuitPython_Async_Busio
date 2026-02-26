@@ -56,7 +56,7 @@ class SPI(busio.SPI):
         while not self.try_lock():
             await asyncio.sleep(0)
 
-    async def awrite_readinto(
+    async def write_readinto(
         self,
         out_buffer,
         in_buffer,
