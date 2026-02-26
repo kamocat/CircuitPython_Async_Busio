@@ -8,11 +8,11 @@ if not hasattr(busio.I2C, "dma_write"):
 
 
 class I2C(busio.I2C):
-    async def lock(self):
+    async def alock(self):
         while not self.try_lock():
             await asyncio.sleep(0)
 
-    async def readfrom_into(self, address, buffer, *, start=0, end=None):
+    async def areadfrom_into(self, address, buffer, *, start=0, end=None):
         view = memoryview(buffer)[start:end]
         d = self.dma_readinto(address, view, end=True)
         while self.dma_is_busy(d):
@@ -26,7 +26,7 @@ class I2C(busio.I2C):
             await asyncio.sleep(0)
         return len(view)
 
-    async def writeto_then_readfrom(
+    async def awriteto_then_readfrom(
         self,
         address,
         out_buffer,
@@ -52,11 +52,11 @@ class I2C(busio.I2C):
 
 
 class SPI(busio.SPI):
-    async def lock(self):
+    async def alock(self):
         while not self.try_lock():
             await asyncio.sleep(0)
 
-    async def write_readinto(
+    async def awrite_readinto(
         self,
         out_buffer,
         in_buffer,
@@ -76,14 +76,14 @@ class SPI(busio.SPI):
         while self.dma_is_busy(d):
             await asyncio.sleep(0)
 
-    async def write(self, buffer, *, start=0, end=None):
+    async def awrite(self, buffer, *, start=0, end=None):
         view = memoryview(buffer)[start:end]
         d = self.dma_write(view)
         while self.dma_is_busy(d):
             await asyncio.sleep(0)
         return len(view)
 
-    async def readinto(self, buffer, *, start=0, end=None, write_value=0):
+    async def areadinto(self, buffer, *, start=0, end=None, write_value=0):
         view = memoryview(buffer)[start:end]
         d = self.dma_readinto(view, write_value=write_value)
         while self.dma_is_busy(d):
@@ -93,19 +93,18 @@ class SPI(busio.SPI):
 
 class UART(busio.UART):
 
-    async def read(self, nbytes=0):
-        data = bytearray(nbytes)
-        await self.readinto(data)
-        return data
+    async def aread(self, nbytes=0):
+        buf = bytearray()
+        while nbytes > 0:
+            if self.in_waiting == 0:
+                await asyncio.sleep(0)
+                continue
+            n = min(nbytes, self.in_waiting)
+            buf.extend(self.read(n))
+            nbytes -= n
+        return buf
 
-    async def readinto(self, buffer, *, start=0, end=None):
-        view = memoryview(buffer)[start:end]
-        d = self.dma_readinto(view)
-        while self.dma_is_busy(d):
-            await asyncio.sleep(0)
-        return len(view)
-
-    async def write(self, buffer):
+    async def awrite(self, buffer):
         d = self.dma_write(buffer)
         while self.dma_is_busy(d):
             await asyncio.sleep(0)

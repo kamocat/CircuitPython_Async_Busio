@@ -4,10 +4,10 @@ import time
 
 import board
 
-import async_busio as busio
+import abusio
 
 addr = None
-i2c = busio.I2C(board.GP21, board.GP20)
+i2c = abusio.I2C(board.GP21, board.GP20)
 
 async def icer():
 
@@ -15,12 +15,12 @@ async def icer():
     register = bytearray([0x00])
     data = bytearray(1)
     while True:
-        await i2c.lock()
+        await i2c.alock()
         bin = array.array('h', [1]*8)
         bout = array.array('b', [0]*16)
         tick = time.monotonic()
         await i2c.writeto(addr, bout)
-        await i2c.readfrom_into(addr, bin)
+        await i2c.areadfrom_into(addr, bin)
         #await asyncio.sleep(0) #Uncomment if you suspect the driver is not yielding
         tock = time.monotonic()
         i2c.unlock()
@@ -37,7 +37,7 @@ async def talker():
 
 async def main():
     global addr
-    await i2c.lock()
+    await i2c.alock()
     found = i2c.scan() #This one is not async
     i2c.unlock()
     if len(found) == 0:
